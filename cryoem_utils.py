@@ -61,20 +61,55 @@ def extract_ligand_coords(cif_file):
     """
     parser = MMCIFParser(QUIET=True)
     structure = parser.get_structure("cif", cif_file)
+    pdb_id = cif_file.split("/")[-1][:-4]
     model = structure[0]
     ligands = {}
+    ligand_nearby_atoms = {}
 
     for chain in model:
+        chain_id = chain.get_id()
+
         for residue in chain:
-            if residue.get_id()[0] != " " and residue.get_id()[0] != "W":
+            if is_studied_ligand(residue):
                 ligand_coords = []
+                ligand_name = f"{pdb_id}_{chain_id}_{residue.get_id()[1]}_{residue.get_id()[0][2:]}"
                 for atom in residue:
                     ligand_coords.append(atom.get_coord())
-                ligands[
-                    f"{cif_file.split('/')[-1][:-4]}_{chain.get_id()}_{residue.get_id()[1]}_{residue.get_id()[0]}"
-                ] = ligand_coords
 
-    return ligands
+                ligands[ligand_name] = ligand_coords
+                ligand_nearby_atoms[ligand_name] = find_nearby_NOC_atoms(
+                    chain, residue, ligand_coords
+                )
+
+    return ligands, ligand_nearby_atoms
+
+
+def is_studied_ligand(residue):
+    return residue.get_id()[0].startswith("H_")
+
+
+def find_nearby_NOC_atoms(chain, ligand_residue, ligand_coords, search_radius=3.8):
+    nearby_n = 0
+    nearby_o = 0
+    nearby_c = 0
+
+    for residue in chain:
+        if residue != ligand_residue:
+            for atom in residue:
+                if atom.element in ["N", "O", "C"]:
+                    atom_coordinate = atom.get_vector()
+
+                    for ligand_atom_coord in ligand_coords:
+                        distance = (atom_coordinate - ligand_atom_coord).norm()
+                        if distance <= search_radius:
+                            if atom.element == "C":
+                                nearby_c += 1
+                            elif atom.element == "O":
+                                nearby_o += 1
+                            else:
+                                nearby_n += 1
+
+    return [nearby_n, nearby_o, nearby_c]
 
 
 def get_ligand_mask(atom_radius, unit_cell, map_array, origin, ligand_coords):

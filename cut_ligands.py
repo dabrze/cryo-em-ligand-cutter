@@ -1,6 +1,7 @@
 import os
 import logging
 import numpy as np
+import pandas as pd
 
 from joblib import Parallel, delayed
 from cryoem_utils import (
@@ -84,11 +85,22 @@ def process_deposit(
         logging.info("------------------------")
         logging.info(f"Extracting ligands from: {pdb_id}")
         logging.info("------------------------")
-        ligands = extract_ligand_coords(f"{input_folder}/{pdb_id}.cif")
+        ligands, nearby_noc = extract_ligand_coords(f"{input_folder}/{pdb_id}.cif")
 
         if not ligands:
             logging.info(f"No (studied) ligands found in {pdb_id}. Skipping...")
         else:
+            logging.info("Ligands found. Saving nearby atom counts to csv...")
+            pd.DataFrame.from_dict(
+                nearby_noc,
+                orient="index",
+                columns=[
+                    "local_near_cut_count_N",
+                    "local_near_cut_count_O",
+                    "local_near_cut_count_C",
+                ],
+            ).to_csv(f"{output_folder}/{pdb_id}_nears.csv")
+
             logging.info(f"Reading map from: {pdb_id}")
             unit_cell, map_array, origin = read_map(
                 f"{input_folder}/{pdb_id}_map_model_difference_1.ccp4"
@@ -123,4 +135,6 @@ if __name__ == "__main__":
     for pdb_id in ["8sor", "6kpj", "8scx"]:
         process_deposit(pdb_id)
 
+    logging.info("========================")
     logging.info("Done.")
+    logging.info("========================")
