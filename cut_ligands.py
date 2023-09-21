@@ -62,8 +62,6 @@ def extract_ligand(
             + f"Zero: {np.sum(blob == 0):,}, NA count: {np.sum(np.isnan(blob)):,}"
         )
         logging.info(f"Saving blob to: {blob_filename}")
-        if not os.path.exists(output_folder):
-            os.makedirs(output_folder)
         np.savez_compressed(f"{output_folder}/{blob_filename}", blob)
     else:
         logging.info(f"{ligand_name} Not enough density. Skipping...")
@@ -91,6 +89,9 @@ def process_deposit(
             logging.info(f"No (studied) ligands found in {pdb_id}. Skipping...")
         else:
             logging.info("Ligands found. Saving nearby atom counts to csv...")
+            if not os.path.exists(output_folder):
+                logging.info(f"Creating output folder: {output_folder}")
+                os.makedirs(output_folder)
             pd.DataFrame.from_dict(
                 nearby_noc,
                 orient="index",
