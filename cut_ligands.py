@@ -1,5 +1,6 @@
 import os
 import logging
+import argparse
 import numpy as np
 import pandas as pd
 
@@ -12,13 +13,6 @@ from cryoem_utils import (
     get_blob_volume,
     get_sphere_volume,
     resample_blob,
-)
-
-logging.basicConfig(
-    filename="blob_processing.log",
-    level=logging.INFO,
-    format="%(asctime)s %(levelname)s: %(message)s",
-    datefmt="%Y-%m-%d %I:%M:%S",
 )
 
 
@@ -129,12 +123,37 @@ def process_deposit(
 
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input_file", help="Input file with", required=True)
+    parser.add_argument(
+        "-n",
+        "--n_jobs",
+        help="The number of threads to use for a single map. -1 means using all processors. ",
+        default=1,
+        type=int,
+    )
+    parser.add_argument(
+        "-l", "--log_file", help="Log filename", default="blob_processing.log"
+    )
+    args = parser.parse_args()
+    logging.basicConfig(
+        filename=args.log_file,
+        level=logging.INFO,
+        format="%(asctime)s %(levelname)s: %(message)s",
+        datefmt="%Y-%m-%d %I:%M:%S",
+    )
+
     logging.info("========================")
     logging.info("Starting blob processing batch.")
     logging.info("========================")
 
-    for pdb_id in ["8sor", "6kpj", "8scx"]:
-        process_deposit(pdb_id)
+    logging.info(f"Reading input file: {args.input_file}")
+    with open(args.input_file) as file:
+        pdb_ids = [line.rstrip() for line in file]
+    logging.info(f"Found {len(pdb_ids)} PDB ids in the input file.")
+
+    for pdb_id in pdb_ids:
+        process_deposit(pdb_id, n_jobs=args.n_jobs)
 
     logging.info("========================")
     logging.info("Done.")
