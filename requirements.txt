@@ -1,5 +1,5 @@
-biopython==1.81
-mrcfile==1.4.3
+biopython>=1.79
+mrcfile>=1.4.3
 pandas>=1.3.5
 numpy>=1.21.6
 scipy>=1.7.3
