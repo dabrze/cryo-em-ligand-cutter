@@ -77,7 +77,7 @@ def process_deposit(
         logging.info("------------------------")
         logging.info(f"Extracting ligands from: {pdb_id}")
         logging.info("------------------------")
-        ligands, nearby_noc = extract_ligand_coords(f"{input_folder}/{pdb_id}.cif")
+        ligands, nearby_noc = extract_ligand_coords(f"{input_folder}/{pdb_id}/{pdb_id}.cif")
 
         if not ligands:
             logging.info(f"No (studied) ligands found in {pdb_id}. Skipping...")
@@ -96,9 +96,9 @@ def process_deposit(
                 ],
             ).to_csv(f"{output_folder}/{pdb_id}_nears.csv")
 
-            logging.info(f"Reading map from: {pdb_id}")
+            logging.info(f"Reading map from: {pdb_id}/map_model_difference_1.ccp4")
             unit_cell, map_array, origin = read_map(
-                f"{input_folder}/{pdb_id}_map_model_difference_1.ccp4"
+                f"{input_folder}/{pdb_id}/map_model_difference_1.ccp4"
             )
 
             Parallel(n_jobs=n_jobs, prefer="threads")(
@@ -124,7 +124,24 @@ def process_deposit(
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input_file", help="Input file with", required=True)
+    parser.add_argument(
+        "-i", 
+        "--input_dir", 
+        help="Directory containing pdb subirectories",
+        default="data"
+    )
+    parser.add_argument(
+        "-o", 
+        "--output_dir", 
+        help="Output directory", 
+        required=True,
+        default="blobs"
+    )
+    parser.add_argument(
+        "-p", 
+        "--pdb_ids_file", 
+        help="File with PDB ids to process", 
+        required=True)
     parser.add_argument(
         "-n",
         "--n_jobs",
@@ -147,13 +164,13 @@ if __name__ == "__main__":
     logging.info("Starting blob processing batch.")
     logging.info("========================")
 
-    logging.info(f"Reading input file: {args.input_file}")
-    with open(args.input_file) as file:
+    logging.info(f"Reading input file: {args.pdb_ids_file}")
+    with open(args.pdb_ids_file) as file:
         pdb_ids = [line.rstrip() for line in file]
     logging.info(f"Found {len(pdb_ids)} PDB ids in the input file.")
 
     for pdb_id in pdb_ids:
-        process_deposit(pdb_id, n_jobs=args.n_jobs)
+        process_deposit(pdb_id, args.input_dir, args.output_dir, args.n_jobs)
 
     logging.info("========================")
     logging.info("Done.")
