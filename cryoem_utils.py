@@ -125,9 +125,9 @@ def get_ligand_mask(atom_radius, unit_cell, map_array, origin, ligand_coords):
     Returns:
         _type_: _description_
     """
-    x_ligand = np.array(ligand_coords)[:, 0]
-    y_ligand = np.array(ligand_coords)[:, 1]
-    z_ligand = np.array(ligand_coords)[:, 2]
+    x_ligand = np.array(ligand_coords)[:, 0] - origin[0]
+    y_ligand = np.array(ligand_coords)[:, 1] - origin[1]
+    z_ligand = np.array(ligand_coords)[:, 2] - origin[2]
 
     grid_3d = np.zeros((map_array.shape), dtype="float")
     x = x_ligand * map_array.shape[0] / unit_cell[0]
