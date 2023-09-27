@@ -102,6 +102,8 @@ def process_deposit(
             unit_cell, map_array, origin = read_map(
                 f"{input_folder}/{pdb_id}/map_model_difference_1.ccp4"
             )
+            if origin[0] != 0 or origin[1] != 0 or origin[2] != 0:
+                logging.warning(f"Exotic origin: {origin}")
 
             Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(extract_ligand)(
