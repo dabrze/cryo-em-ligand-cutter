@@ -55,12 +55,33 @@ def create_binary_kernel(radius):
     return kern_sphere
 
 
+def get_em_stats(cif_file):
+    resolution = None
+    num_particles = None
+
+    for line in open(cif_file):
+        if line.startswith("_em_3d_reconstruction.resolution "):
+            resolution = round(float(line.split()[1]), 1)
+        if line.startswith("_em_3d_reconstruction.num_particles "):
+            num_particles = int(line.split()[1])
+
+    if resolution is not None:
+        if resolution > 4.0:
+            resolution = 4.0
+        elif resolution < 1.0:
+            resolution = 1.0
+
+    return resolution, num_particles
+
+
 def extract_ligand_coords(cif_file):
     """
     Extracts the coordinates of all the atoms of a ligand in a CIF file.
     """
     parser = MMCIFParser(QUIET=True)
     structure = parser.get_structure("cif", cif_file)
+    resolution, num_particles = get_em_stats(cif_file)
+
     pdb_id = cif_file.split("/")[-1][:-4]
     model = structure[0]
     ligands = {}
@@ -81,7 +102,7 @@ def extract_ligand_coords(cif_file):
                     chain, residue, ligand_coords
                 )
 
-    return ligands, ligand_nearby_atoms
+    return ligands, ligand_nearby_atoms, resolution, num_particles
 
 
 def is_studied_ligand(residue):
@@ -211,3 +232,38 @@ def plot_density(blob_array):
     ax = fig.add_subplot(111, projection="3d")
     ax.scatter(x, y, z, c=blob_array[z, x, y])
     plt.show()
+
+
+MAP_VALUE_MAPPER = {
+    1.0: 0.66,
+    1.1: 0.63,
+    1.2: 0.57,
+    1.3: 0.57,
+    1.4: 0.54,
+    1.5: 0.50,
+    1.6: 0.48,
+    1.7: 0.44,
+    1.8: 0.42,
+    1.9: 0.39,
+    2.0: 0.36,
+    2.1: 0.33,
+    2.2: 0.31,
+    2.3: 0.30,
+    2.4: 0.28,
+    2.5: 0.25,
+    2.6: 0.25,
+    2.7: 0.23,
+    2.8: 0.21,
+    2.9: 0.21,
+    3.0: 0.20,
+    3.1: 0.18,
+    3.2: 0.18,
+    3.3: 0.17,
+    3.4: 0.15,
+    3.5: 0.16,
+    3.6: 0.14,
+    3.7: 0.12,
+    3.8: 0.14,
+    3.9: 0.15,
+    4.0: 0.17,
+}

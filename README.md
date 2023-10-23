@@ -25,5 +25,5 @@ Put the cif files (`<pdb_id>.cif`) and cryo-em difference maps (`<pdb_id>_map_mo
 ```bash
 python cut_ligands.py --pdb_ids_file sample_input.txt  --input_dir data --output_dir blobs --n_jobs -1 --log_file blob_processing.log
 ```
-
+    
 The numpy arrays with the blob densities will be output into the `blobs` folder. The script will also create a log file called `blob_processing.log`.

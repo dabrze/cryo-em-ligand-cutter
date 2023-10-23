@@ -3,6 +3,7 @@ import logging
 import argparse
 import numpy as np
 import pandas as pd
+from scipy.stats import norm
 
 from joblib import Parallel, delayed
 from cryoem_utils import (
@@ -13,16 +14,19 @@ from cryoem_utils import (
     get_blob_volume,
     get_sphere_volume,
     resample_blob,
+    MAP_VALUE_MAPPER,
 )
 
 
 def extract_ligand(
     output_folder,
-    density_std_threshold,
+    density_threshold,
     min_blob_radius,
     atom_radius,
     target_voxel_size,
-    target_min_density,
+    resolution,
+    res_cov_threshold,
+    blob_cov_threshold,
     padding,
     unit_cell,
     map_array,
@@ -42,21 +46,43 @@ def extract_ligand(
 
     # Resampling the map to target voxel size
     blob = resample_blob(blob, target_voxel_size, unit_cell, map_array)
-    blob[blob < density_std_threshold * np.std(map_array)] = 0
+    blob[blob < density_threshold] = 0
     blob_volume = get_blob_volume(np.sum(blob != 0), target_voxel_size)
 
     if blob_volume >= get_sphere_volume(min_blob_radius):
-        # rescaling density values
-        blob = blob * (target_min_density / blob[blob > 0].min())
-        blob_filename = f"{ligand_name}.npz"
-
-        logging.info(
-            f"{ligand_name} Dimensions: {blob.shape}, Blob min value: {blob[blob > 0].min():.3f}, "
-            + f"Blob max value: {blob.max():.3f}, Non-zero: {np.sum(blob != 0):,}, "
-            + f"Zero: {np.sum(blob == 0):,}, NA count: {np.sum(np.isnan(blob)):,}"
+        fragment_mask = mask[
+            min_x - padding : max_x + 1 + padding,
+            min_y - padding : max_y + 1 + padding,
+            min_z - padding : max_z + 1 + padding,
+        ]
+        fragment_mask = resample_blob(
+            fragment_mask, target_voxel_size, unit_cell, map_array
         )
-        logging.info(f"Saving blob to: {blob_filename}")
-        np.savez_compressed(f"{output_folder}/{blob_filename}", blob)
+        res_voxels = fragment_mask > 0
+        blob_voxels = blob > 0
+        res_cov_frac = np.sum(res_voxels & blob_voxels) / np.sum(res_voxels)
+        blob_cov_frac = np.sum(res_voxels & blob_voxels) / np.sum(blob_voxels)
+
+        if res_cov_frac >= res_cov_threshold and blob_cov_frac >= blob_cov_threshold:
+            # rescaling density values
+            logging.info(f"Rescaling min density to: {MAP_VALUE_MAPPER[resolution]}")
+            blob = blob * (MAP_VALUE_MAPPER[resolution] / blob[blob > 0].min())
+            blob_filename = f"{ligand_name}.npz"
+
+            logging.info(
+                f"{ligand_name} Dimensions: {blob.shape}, Blob min value: {blob[blob > 0].min():.3f}, "
+                + f"Blob max value: {blob.max():.3f}, Non-zero: {np.sum(blob != 0):,}, "
+                + f"Zero: {np.sum(blob == 0):,}, NA count: {np.sum(np.isnan(blob)):,}, "
+                + f"Blob volume: {blob_volume:.3f}, Model coverage: {res_cov_frac:.2f}, "
+                + f"Blob coverage: {blob_cov_frac:.2f}"
+            )
+            logging.info(f"Saving blob to: {blob_filename}")
+            np.savez_compressed(f"{output_folder}/{blob_filename}", blob)
+        else:
+            logging.info(
+                f"{ligand_name} Model coverage: {res_cov_frac:.2f}, "
+                + f"Blob coverage: {blob_cov_frac:.2f}. Not enough coverage. Skipping..."
+            )
     else:
         logging.info(f"{ligand_name} Not enough density. Skipping...")
 
@@ -66,20 +92,31 @@ def process_deposit(
     input_folder="data",
     output_folder="blobs",
     n_jobs=-1,
-    density_std_threshold=17,
+    density_std_threshold=2.8,
     min_blob_radius=0.8,
     atom_radius=1.5,
     target_voxel_size=0.2,
-    target_min_density=0.39,
+    res_cov_threshold=0.02,
+    blob_cov_threshold=0.01,
     padding=2,
 ):
     try:
         logging.info("------------------------")
         logging.info(f"Extracting ligands from: {pdb_id}")
         logging.info("------------------------")
-        ligands, nearby_noc = extract_ligand_coords(
+        ligands, nearby_noc, resolution, num_particles = extract_ligand_coords(
             f"{input_folder}/{pdb_id}/{pdb_id}.cif"
         )
+        if resolution is None:
+            logging.warning(f"No resolution found for {pdb_id}. Setting it to 3.0")
+            resolution = 3.0
+        else:
+            logging.info(f"Resolution: {resolution:.1f}")
+        if num_particles is None:
+            logging.warning(f"Particle num not found for {pdb_id}. Setting it to 3.0")
+            resolution = 3.0
+        else:
+            logging.info(f"Particle num: {num_particles:d}")
 
         if not ligands:
             logging.info(f"No (studied) ligands found in {pdb_id}. Skipping...")
@@ -105,14 +142,25 @@ def process_deposit(
             if origin[0] != 0 or origin[1] != 0 or origin[2] != 0:
                 logging.warning(f"Exotic origin: {origin}")
 
+            map_std = np.std(map_array)
+            value_mask = (map_array < -0.5 * map_std) | (map_array > 0.5 * map_std)
+            zeros_pct = np.sum(~value_mask) / map_array.size
+            logging.info(f"Percentage of zero-ish values: {zeros_pct*100:.2f}%")
+            density_threshold = np.quantile(
+                map_array[value_mask], norm.cdf(density_std_threshold)
+            )
+            logging.info("Absolute density threshold [V]: %.3f", density_threshold)
+
             Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(extract_ligand)(
                     output_folder,
-                    density_std_threshold,
+                    density_threshold,
                     min_blob_radius,
                     atom_radius,
                     target_voxel_size,
-                    target_min_density,
+                    resolution,
+                    res_cov_threshold,
+                    blob_cov_threshold,
                     padding,
                     unit_cell,
                     map_array,
