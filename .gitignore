@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 /blobs
 /data
+/.vscode/launch.json
+/articles
