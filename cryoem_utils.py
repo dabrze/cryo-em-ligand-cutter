@@ -1,7 +1,9 @@
 import mrcfile
 import scipy as sp
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
+from scipy.stats import mode
 
 from Bio.PDB.MMCIFParser import MMCIFParser
 from scipy import signal
@@ -232,6 +234,26 @@ def plot_density(blob_array):
     ax = fig.add_subplot(111, projection="3d")
     ax.scatter(x, y, z, c=blob_array[z, x, y])
     plt.show()
+
+
+def create_histograms(pdb_id, map_array, value_mask):
+    map_mode = mode(map_array.flatten())[0]
+
+    df = pd.DataFrame(map_array.flatten(), columns=[f"{pdb_id} original"])
+    df.hist(bins=100)
+    plt.savefig(f"hists/{pdb_id}_original.png")
+    df = pd.DataFrame(
+        map_array[(map_array < map_mode) | (map_array > map_mode)].flatten(),
+        columns=[f"{pdb_id} without mode"],
+    )
+    df.hist(bins=100)
+    plt.savefig(f"hists/{pdb_id}_without mode.png")
+    df = pd.DataFrame(
+        map_array[value_mask].flatten(),
+        columns=[f"{pdb_id} without 1/2 std around median"],
+    )
+    df.hist(bins=100)
+    plt.savefig(f"hists/{pdb_id}_without_half_std arounf_median.png")
 
 
 MAP_VALUE_MAPPER = {

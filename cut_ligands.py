@@ -7,6 +7,7 @@ from scipy.stats import norm
 
 from joblib import Parallel, delayed
 from cryoem_utils import (
+    create_histograms,
     extract_ligand_coords,
     read_map,
     get_ligand_mask,
@@ -99,6 +100,7 @@ def process_deposit(
     res_cov_threshold=0.02,
     blob_cov_threshold=0.01,
     padding=2,
+    verbose=False,
 ):
     try:
         logging.info("------------------------")
@@ -142,14 +144,22 @@ def process_deposit(
             if origin[0] != 0 or origin[1] != 0 or origin[2] != 0:
                 logging.warning(f"Exotic origin: {origin}")
 
+            map_median = np.median(map_array)
             map_std = np.std(map_array)
-            value_mask = (map_array < -0.5 * map_std) | (map_array > 0.5 * map_std)
-            zeros_pct = np.sum(~value_mask) / map_array.size
-            logging.info(f"Percentage of zero-ish values: {zeros_pct*100:.2f}%")
-            density_threshold = np.quantile(
-                map_array[value_mask], norm.cdf(density_std_threshold)
+            value_mask = (map_array < map_median - 0.5 * map_std) | (
+                map_array > map_median + 0.5 * map_std
             )
+            zeros_pct = np.sum(~value_mask) / map_array.size
+            logging.info(f"Median: {map_median:.3f}, std: {map_std:.3f}")
+            logging.info(f"Percentage of removed values: {zeros_pct*100:.2f}%")
+
+            quantile_threshold = norm.cdf(density_std_threshold)
+            density_threshold = np.quantile(map_array[value_mask], quantile_threshold)
+            logging.info("Quantile threshold: %.5f", quantile_threshold)
             logging.info("Absolute density threshold [V]: %.3f", density_threshold)
+
+            if verbose:
+                create_histograms(pdb_id, map_array, value_mask)
 
             Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(extract_ligand)(
@@ -192,7 +202,7 @@ if __name__ == "__main__":
         "-n",
         "--n_jobs",
         help="The number of threads to use for a single map. -1 means using all processors. ",
-        default=1,
+        default=-1,
         type=int,
     )
     parser.add_argument(
