@@ -63,9 +63,15 @@ def get_em_stats(cif_file):
 
     for line in open(cif_file):
         if line.startswith("_em_3d_reconstruction.resolution "):
-            resolution = round(float(line.split()[1]), 1)
+            try:
+                resolution = round(float(line.split()[1]), 1)
+            except Exception:
+                resolution = None
         if line.startswith("_em_3d_reconstruction.num_particles "):
-            num_particles = int(line.split()[1])
+            try:
+                num_particles = int(line.split()[1])
+            except Exception:
+                num_particles = None
 
     if resolution is not None:
         if resolution > 4.0:
