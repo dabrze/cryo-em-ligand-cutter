@@ -3,9 +3,8 @@ import logging
 import argparse
 import numpy as np
 import pandas as pd
-from scipy.stats import norm
-
-from joblib import Parallel, delayed
+from scipy.stats import norm  # type: ignore
+from joblib import Parallel, delayed  # type: ignore
 from cryoem_utils import (
     create_histograms,
     extract_ligand_coords,
@@ -35,6 +34,28 @@ def extract_ligand(
     ligand_name,
     ligand_coords,
 ):
+    """
+    Extracts a ligand blob from a given map array and saves it as a compressed numpy file.
+
+    Args:
+        output_folder (str): Path to the output folder where the compressed numpy file will be saved.
+        density_threshold (float): Density threshold for the ligand blob.
+        min_blob_radius (float): Minimum radius of the ligand blob.
+        atom_radius (float): Radius of the atoms in the ligand.
+        target_voxel_size (float): Target voxel size for the resampled blob.
+        resolution (float): Resolution of the map.
+        res_cov_threshold (float): Minimum coverage threshold for the model.
+        blob_cov_threshold (float): Minimum coverage threshold for the blob.
+        padding (int): Padding size for the blob.
+        unit_cell (np.ndarray): Unit cell dimensions.
+        map_array (np.ndarray): Map array.
+        origin (np.ndarray): Origin of the map.
+        ligand_name (str): Name of the ligand.
+        ligand_coords (np.ndarray): Coordinates of the ligand.
+
+    Returns:
+        None
+    """
     logging.info(f"Cutting out the blob for: {ligand_name}")
     mask = get_ligand_mask(atom_radius, unit_cell, map_array, origin, ligand_coords)
     min_x, max_x, min_y, max_y, min_z, max_z = get_mask_bounding_box(mask)
@@ -102,6 +123,29 @@ def process_deposit(
     padding=2,
     verbose=False,
 ):
+    """
+    Extracts ligands from a PDB file and saves nearby atom counts to a CSV file.
+    Then, reads a map from a CCP4 file and extracts blobs of electron density around each ligand.
+    The extracted blobs are saved as separate npz files.
+
+    Args:
+        pdb_id (str): The PDB ID of the structure to process.
+        input_folder (str, optional): The folder containing the input files. Defaults to "data".
+        output_folder (str, optional): The folder to save the output files. Defaults to "blobs".
+        n_jobs (int, optional): The number of parallel jobs to run. Defaults to -1.
+        density_std_threshold (float, optional): The number of standard deviations from the mean density to
+            use as a threshold for blob extraction. Defaults to 2.8.
+        min_blob_radius (float, optional): The minimum radius of a blob in angstroms. Defaults to 0.8.
+        atom_radius (float, optional): The radius of an atom in angstroms. Defaults to 1.5.
+        target_voxel_size (float, optional): The target voxel size in angstroms. Defaults to 0.2.
+        res_cov_threshold (float, optional): The minimum ratio of covered voxels to total voxels in a blob for
+            it to be considered valid. Defaults to 0.02.
+        blob_cov_threshold (float, optional): The minimum ratio of covered voxels to total voxels in a ligand
+            for it to be considered valid.
+            Defaults to 0.01.
+        padding (int, optional): The number of voxels to pad around each ligand. Defaults to 2.
+        verbose (bool, optional): Whether to output verbose logging. Defaults to False.
+    """
     try:
         logging.info("------------------------")
         logging.info(f"Extracting ligands from: {pdb_id}")

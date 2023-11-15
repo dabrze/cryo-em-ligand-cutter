@@ -1,18 +1,24 @@
-import mrcfile
-import scipy as sp
+import mrcfile  # type: ignore
+import scipy as sp  # type: ignore
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
-from scipy.stats import mode
+from scipy.stats import mode  # type: ignore
 
-from Bio.PDB.MMCIFParser import MMCIFParser
+from Bio.PDB.MMCIFParser import MMCIFParser  # type: ignore
 from scipy import signal
 from math import sqrt
 
 
 def read_map(map_filename):
     """
-    Reads a map file and converts it to a voxel grid (array) and adjust the axes order.
+    Reads a map file in MRC format and returns the unit cell, map array, and origin.
+
+    Args:
+        map_filename (str): The path to the MRC file.
+
+    Returns:
+        tuple: A tuple containing the unit cell (numpy array), map array (numpy array), and origin (list).
     """
     with mrcfile.open(map_filename) as file:
         order = (3 - file.header.maps, 3 - file.header.mapr, 3 - file.header.mapc)
@@ -39,7 +45,13 @@ def read_map(map_filename):
 
 def create_binary_kernel(radius):
     """
-    Creates a binary kernel for creating convolutions around atoms.
+    Creates a binary kernel of a given radius.
+
+    Args:
+        radius (int): The radius of the kernel.
+
+    Returns:
+        numpy.ndarray: A binary kernel of shape (2*radius+1, 2*radius+1, 2*radius+1).
     """
     boxsize = 2 * radius + 1
     kern_sphere = np.zeros(shape=(boxsize, boxsize, boxsize), dtype="float")
@@ -58,6 +70,16 @@ def create_binary_kernel(radius):
 
 
 def get_em_stats(cif_file):
+    """
+    Parses a CIF file and returns the resolution and number of particles
+    for the EM reconstruction.
+
+    Args:
+        cif_file (str): Path to the input CIF file.
+
+    Returns:
+        tuple: A tuple containing the resolution (float) and number of particles (int).
+    """
     resolution = None
     num_particles = None
 
@@ -84,7 +106,17 @@ def get_em_stats(cif_file):
 
 def extract_ligand_coords(cif_file):
     """
-    Extracts the coordinates of all the atoms of a ligand in a CIF file.
+    Extracts the coordinates of ligands and nearby atoms from a CIF file.
+
+    Args:
+        cif_file (str): The path to the CIF file.
+
+    Returns:
+        tuple: A tuple containing:
+            - dict: A dictionary of ligand names and their corresponding coordinates.
+            - dict: A dictionary of ligand names and their nearby atoms.
+            - float: The resolution of the structure.
+            - int: The number of particles in the structure.
     """
     parser = MMCIFParser(QUIET=True)
     structure = parser.get_structure("cif", cif_file)
@@ -114,10 +146,32 @@ def extract_ligand_coords(cif_file):
 
 
 def is_studied_ligand(residue):
+    """
+    Determines whether a given residue is a studied ligand.
+
+    Args:
+        residue (Bio.PDB.Residue): The residue to check.
+
+    Returns:
+        bool: True if the residue is a studied ligand, False otherwise.
+    """
     return residue.get_id()[0].startswith("H_")
 
 
 def find_nearby_NOC_atoms(chain, ligand_residue, ligand_coords, search_radius=3.8):
+    """
+    Finds nearby nitrogen, oxygen, and carbon atoms to a given ligand residue within a specified search radius.
+
+    Args:
+        chain (Bio.PDB.Chain.Chain): The chain containing the ligand residue and other residues to search.
+        ligand_residue (Bio.PDB.Residue.Residue): The ligand residue to search around.
+        ligand_coords (list): A list of coordinates of atoms in the ligand residue.
+        search_radius (float, optional): The search radius in Angstroms. Defaults to 3.8.
+
+    Returns:
+        list: A list containing the number of nearby nitrogen, oxygen, and carbon atoms, respectively.
+    """
+
     nearby_n = 0
     nearby_o = 0
     nearby_c = 0
@@ -142,17 +196,18 @@ def find_nearby_NOC_atoms(chain, ligand_residue, ligand_coords, search_radius=3.
 
 
 def get_ligand_mask(atom_radius, unit_cell, map_array, origin, ligand_coords):
-    """Masks the map using the coordinates of ligand atoms.
+    """
+    Creates a binary mask of the ligand in the given map_array.
 
     Args:
-        atom_radius (_type_): _description_
-        unit_cell (_type_): _description_
-        map_array (_type_): _description_
-        origin (_type_): _description_
-        ligand_coords (_type_): _description_
+        atom_radius (float): The radius of the atoms in the ligand.
+        unit_cell (tuple): The dimensions of the unit cell.
+        map_array (numpy.ndarray): The 3D density map.
+        origin (tuple): The origin of the map.
+        ligand_coords (list): The coordinates of the atoms in the ligand.
 
     Returns:
-        _type_: _description_
+        numpy.ndarray: A binary mask of the ligand in the given map_array.
     """
     x_ligand = np.array(ligand_coords)[:, 0] - origin[0]
     y_ligand = np.array(ligand_coords)[:, 1] - origin[1]
@@ -192,7 +247,15 @@ def get_ligand_mask(atom_radius, unit_cell, map_array, origin, ligand_coords):
 
 def get_mask_bounding_box(masked_array):
     """
-    Calculates the 3D bounding box of non-zero voxels in an array.
+    Returns the bounding box of a masked array, defined as the minimum and maximum indices of nonzero elements
+    in each dimension.
+
+    Args:
+        masked_array (numpy.ndarray): A 3D numpy array with boolean values indicating the masked voxels.
+
+    Returns:
+        tuple: A tuple containing the minimum and maximum indices of nonzero elements in each dimension, in the
+        following order: (min_x, max_x, min_y, max_y, min_z, max_z).
     """
     nonzero_indices = np.nonzero(masked_array)
 
@@ -204,6 +267,18 @@ def get_mask_bounding_box(masked_array):
 
 
 def resample_blob(blob, target_voxel_size, unit_cell, map_array):
+    """
+    Resamples a given blob to a target voxel size using the provided unit cell and map array.
+
+    Args:
+        blob (numpy.ndarray): The blob to be resampled.
+        target_voxel_size (float): The target voxel size (in Angstroms).
+        unit_cell (tuple): The unit cell dimensions (in Angstroms).
+        map_array (numpy.ndarray): The map array.
+
+    Returns:
+        numpy.ndarray: The resampled blob.
+    """
     blob = sp.ndimage.zoom(
         blob,
         [
@@ -219,14 +294,27 @@ def resample_blob(blob, target_voxel_size, unit_cell, map_array):
 
 def get_sphere_volume(radius):
     """
-    Calculates the volume of a sphere with a given radius.
+    Calculates the volume of a sphere given its radius.
+
+    Args:
+        radius (float): The radius of the sphere.
+
+    Returns:
+        float: The volume of the sphere.
     """
     return 4.0 / 3.0 * 3.14 * (radius**3)
 
 
 def get_blob_volume(voxel_count, voxel_size):
     """
-    Calculates the Angstrom volume of a blob based on the number of voxels and their size (in Angstroms).
+    Calculates the volume of a blob given the number of voxels and the size of each voxel.
+
+    Args:
+        voxel_count (int): The number of voxels in the blob.
+        voxel_size (float): The size of each voxel in angstroms.
+
+    Returns:
+        float: The volume of the blob in cubic angstroms.
     """
     return voxel_count * (voxel_size**3)
 
@@ -234,6 +322,12 @@ def get_blob_volume(voxel_count, voxel_size):
 def plot_density(blob_array):
     """
     Creates a simple scatter plot of a grid of voxels.
+
+    Parameters:
+        blob_array (numpy.ndarray): A 3D array representing the density map.
+
+    Returns:
+        None
     """
     z, x, y = blob_array.nonzero()
     fig = plt.figure()
@@ -243,6 +337,17 @@ def plot_density(blob_array):
 
 
 def create_histograms(pdb_id, map_array, value_mask):
+    """
+    Create histograms of map_array values for a given PDB ID.
+
+    Parameters:
+        pdb_id (str): The PDB ID of the map.
+        map_array (numpy.ndarray): The 3D map array.
+        value_mask (numpy.ndarray): A boolean mask indicating which values to include in the histograms.
+
+    Returns:
+        None
+    """
     map_mode = mode(map_array.flatten())[0]
 
     df = pd.DataFrame(map_array.flatten(), columns=[f"{pdb_id} original"])
