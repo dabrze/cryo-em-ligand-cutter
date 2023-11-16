@@ -3,6 +3,7 @@ import scipy as sp  # type: ignore
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+import os
 from scipy.stats import mode  # type: ignore
 
 from Bio.PDB.MMCIFParser import MMCIFParser  # type: ignore
@@ -365,6 +366,98 @@ def create_histograms(pdb_id, map_array, value_mask):
     )
     df.hist(bins=100)
     plt.savefig(f"hists/{pdb_id}_without_half_std arounf_median.png")
+
+
+def create_ligand_only_pdb(cif_file, output_file, chimera_dir):
+    """
+    Creates a PDB file containing only the ligand from a CIF file using Chimera software.
+
+    Parameters:
+        cif_file (str): path to the input CIF file
+        output_file (str): path to the output PDB file
+        chimera_dir (str): path to the Chimera software directory
+
+    Returns:
+        None
+    """
+
+    chimera_command = f"""
+    from chimera import runCommand as rc
+    rc('open {cif_file}')
+    rc('select :/isHet')
+    rc('write selected format pdb {output_file}')
+    rc('close all')
+    rc('stop now')
+    """
+
+    with open("chimera_command.py", "w") as f:
+        f.write(chimera_command)
+
+    os.system(f"{chimera_dir}/bin/chimera --nogui --script chimera_command.py")
+    os.remove("chimera_command.py")
+
+
+def calc_qscores(map_file, pdb_file, mapq_dir, chimera_dir, np=6, res=3.0, sigma=0.6):
+    """
+    Calculates the Q-scores for a given map and PDB file using the MAPQ tool.
+
+    Parameters:
+        map_file (str): Path to the map file.
+        pdb_file (str): Path to the PDB file.
+        mapq_dir (str): Path to the MAPQ directory.
+        chimera_dir (str): Path to the Chimera directory.
+        np (int, optional): Number of processors to use. Defaults to 6.
+        res (float, optional): Reference resolution of the Q-scores. Defaults to 3.0.
+        sigma (float, optional): Sigma value for the map. Defaults to 0.6.
+
+    Returns:
+        Tuple[str, str]: A tuple containing the paths to the resulting PDB file and
+        the text file with all the Q-scores.
+    """
+
+    pdb_result_file = f"{pdb_file}__Q__{map_file}.pdb"
+    txt_result_file = f"{pdb_file}__Q__{map_file}_All.txt"
+
+    os.system(
+        f"{mapq_dir}/mapq_cmd.py {chimera_dir} {map_file} {pdb_file} np={np} res={res} sigma={sigma}"
+    )
+
+    return pdb_result_file, txt_result_file
+
+
+def extract_qscores(qscores_txt_file):
+    df = pd.DataFrame(columns=["chain", "res_id", "res_name", "qscore"])
+
+    with open(qscores_txt_file, "r") as f:
+        lines = f.readlines()
+
+    for line in lines:
+        if line.startswith("Chain"):
+            parsing = True
+            continue
+
+        if line.startswith("Molecule"):
+            parsing = False
+
+        if parsing:
+            ligand_stats = line.split()
+            chain = ligand_stats[0]
+            res_name = ligand_stats[1]
+            res_id = ligand_stats[2]
+            qscore = ligand_stats[3]
+            expected_qscore = ligand_stats[4]
+            df = df.append(
+                {
+                    "chain": chain,
+                    "res_id": res_id,
+                    "res_name": res_name,
+                    "qscore": qscore,
+                    "expected_qscore": expected_qscore,
+                },
+                ignore_index=True,
+            )
+
+    return df
 
 
 MAP_VALUE_MAPPER = {
