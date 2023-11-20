@@ -1,0 +1,7 @@
+
+Map: diffs.mrc
+Resolution entered (RES): 3
+Model: ligands.pdb
+Sigma: 0.6
+
+expectedQ = -0.0019064058*POWER(RES,3) + 0.0499875375*POWER(RES,2) - 0.4513945578*RES + 1.5361860733

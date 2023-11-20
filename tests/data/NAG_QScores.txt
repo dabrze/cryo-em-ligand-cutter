@@ -1,0 +1,49 @@
+
+Map: diffs.mrc
+Resolution entered (RES): 3
+Model: ligands.pdb
+Sigma: 0.6
+
+expectedQ = -0.0019064058*POWER(RES,3) + 0.0499875375*POWER(RES,2) - 0.4513945578*RES + 1.5361860733
+Chain	Type	# residues	Avg. Q	ExpectedQ@3.00
+F	NAG	2	0.50	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+G	NAG	2	0.50	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+H	NAG	2	0.51	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+I	NAG	2	0.51	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+J	NAG	2	0.38	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+
+Molecule - Chain I
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+I	NAG	1			0.553446	0.580417
+I	NAG	2			0.465436	0.580417
+
+
+Molecule - Chain H
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+H	NAG	1			0.523671	0.580417
+H	NAG	2			0.490927	0.580417
+
+
+Molecule - Chain J
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+J	NAG	1			0.351254	0.580417
+J	NAG	2			0.412050	0.580417
+
+
+Molecule - Chain G
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+G	NAG	1			0.524845	0.580417
+G	NAG	2			0.468843	0.580417
+
+
+Molecule - Chain F
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+F	NAG	1			0.534555	0.580417
+F	NAG	2			0.470638	0.580417
+
+

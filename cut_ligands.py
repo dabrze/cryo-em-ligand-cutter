@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from scipy.stats import norm  # type: ignore
 from joblib import Parallel, delayed  # type: ignore
-from cryoem_utils import (
+from utils.cryoem_utils import (
     create_histograms,
     extract_ligand_coords,
     read_map,
@@ -254,7 +254,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
     logging.basicConfig(
-        filename=args.log_file,
+        # filename=args.log_file,
         level=logging.INFO,
         format="%(asctime)s %(levelname)s: %(message)s",
         datefmt="%Y-%m-%d %I:%M:%S",

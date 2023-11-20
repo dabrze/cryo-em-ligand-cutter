@@ -1,0 +1,114 @@
+
+Map: diffs.mrc
+Resolution entered (RES): 3
+Model: ligands.pdb
+Sigma: 0.6
+
+expectedQ = -0.0019064058*POWER(RES,3) + 0.0499875375*POWER(RES,2) - 0.4513945578*RES + 1.5361860733
+Chain	Type	# residues	Avg. Q	ExpectedQ@3.00
+C	DTP	1	0.55	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+D	DTP	1	0.58	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+E	DTP	1	0.54	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+F	DTP	1	0.59	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+G	DTP	1	0.57	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+H	DTP	1	0.56	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+I	DTP	1	0.57	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+J	DTP	1	0.57	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+K	DTP	1	0.55	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+L	DTP	1	0.55	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+M	DTP	1	0.57	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+N	DTP	1	0.56	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+O	DTP	1	0.55	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+P	DTP	1	0.56	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+Q	DTP	1	0.53	=-0.0019064058*POWER(3.00,3) + 0.0499875375*POWER(3.00,2) - 0.4513945578*3.00 + 1.5361860733
+
+Molecule - Chain C
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+C	DTP	1301			0.551543	0.580417
+
+
+Molecule - Chain E
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+E	DTP	1301			0.540240	0.580417
+
+
+Molecule - Chain D
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+D	DTP	1301			0.580525	0.580417
+
+
+Molecule - Chain G
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+G	DTP	1301			0.565409	0.580417
+
+
+Molecule - Chain F
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+F	DTP	1301			0.587105	0.580417
+
+
+Molecule - Chain I
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+I	DTP	1301			0.573877	0.580417
+
+
+Molecule - Chain H
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+H	DTP	1301			0.564891	0.580417
+
+
+Molecule - Chain K
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+K	DTP	1301			0.552250	0.580417
+
+
+Molecule - Chain J
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+J	DTP	1301			0.568690	0.580417
+
+
+Molecule - Chain M
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+M	DTP	1301			0.567578	0.580417
+
+
+Molecule - Chain L
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+L	DTP	1301			0.554847	0.580417
+
+
+Molecule - Chain O
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+O	DTP	1301			0.550293	0.580417
+
+
+Molecule - Chain N
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+N	DTP	1301			0.556810	0.580417
+
+
+Molecule - Chain Q
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+Q	DTP	1301			0.531995	0.580417
+
+
+Molecule - Chain P
+
+Chain	Molecule	Mol #			Q_molecule	ExpectedQ@3.00
+P	DTP	1301			0.559907	0.580417
+
+

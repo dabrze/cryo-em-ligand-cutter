@@ -426,13 +426,14 @@ def calc_qscores(map_file, pdb_file, mapq_dir, chimera_dir, np=6, res=3.0, sigma
 
 
 def extract_qscores(qscores_txt_file):
-    df = pd.DataFrame(columns=["chain", "res_id", "res_name", "qscore"])
+    parsing = False
+    qscore_dict = {"chain": [], "res_id": [], "res_name": [], "qscore": []}
 
     with open(qscores_txt_file, "r") as f:
         lines = f.readlines()
 
     for line in lines:
-        if line.startswith("Chain"):
+        if line.startswith("Chain	Molecule"):
             parsing = True
             continue
 
@@ -441,23 +442,14 @@ def extract_qscores(qscores_txt_file):
 
         if parsing:
             ligand_stats = line.split()
-            chain = ligand_stats[0]
-            res_name = ligand_stats[1]
-            res_id = ligand_stats[2]
-            qscore = ligand_stats[3]
-            expected_qscore = ligand_stats[4]
-            df = df.append(
-                {
-                    "chain": chain,
-                    "res_id": res_id,
-                    "res_name": res_name,
-                    "qscore": qscore,
-                    "expected_qscore": expected_qscore,
-                },
-                ignore_index=True,
-            )
+            if len(ligand_stats) < 4:
+                continue
+            qscore_dict["chain"].append(ligand_stats[0])
+            qscore_dict["res_name"].append(ligand_stats[1])
+            qscore_dict["res_id"].append(ligand_stats[2])
+            qscore_dict["qscore"].append(float(ligand_stats[3]))
 
-    return df
+    return pd.DataFrame(qscore_dict)
 
 
 MAP_VALUE_MAPPER = {
