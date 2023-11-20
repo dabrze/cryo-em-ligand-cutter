@@ -44,23 +44,13 @@ def test_dtp_extract_qscores():
     assert obtained_qscores == pytest.approx(expected_qscores, abs=0.01)
 
 
-# def test_create_ligand_only_pdb(cif_file, output_file, chimera_dir):
-#     # Define test inputs
-#     cif_file = "test_data/test.cif"
-#     output_file = "test_data/test_ligand.pdb"
-#     chimera_dir = "/path/to/chimera"
+def test_create_ligand_only_pdb():
+    cif_file = "tests/data/8sor.cif"
+    output_file = "tests/data/test_ligand.pdb"
+    command_file = "tests/data/chimera_command.py"
+    chimera_dir = "C:/Tools/Crystallography/Chimera 1.17.3"
 
-#     # Call function to create PDB file containing only the ligand
-#     create_ligand_only_pdb(cif_file, output_file, chimera_dir)
+    cu.create_ligand_only_pdb(cif_file, output_file, command_file, chimera_dir)
 
-#     # Check that output file was created
-#     assert os.path.exists(output_file)
-
-#     # Check that output file contains only one chain
-#     with open(output_file, "r") as f:
-#         pdb_lines = f.readlines()
-#     chain_ids = set(line[21] for line in pdb_lines if line.startswith("ATOM"))
-#     assert len(chain_ids) == 1
-
-#     # Clean up test output file
-#     os.remove(output_file)
+    assert os.path.exists(output_file)
+    os.remove(output_file)

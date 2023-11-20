@@ -368,7 +368,9 @@ def create_histograms(pdb_id, map_array, value_mask):
     plt.savefig(f"hists/{pdb_id}_without_half_std arounf_median.png")
 
 
-def create_ligand_only_pdb(cif_file, output_file, chimera_dir):
+def create_ligand_only_pdb(
+    cif_file, output_file, command_file, chimera_dir, remove_command_file=True
+):
     """
     Creates a PDB file containing only the ligand from a CIF file using Chimera software.
 
@@ -381,20 +383,21 @@ def create_ligand_only_pdb(cif_file, output_file, chimera_dir):
         None
     """
 
-    chimera_command = f"""
-    from chimera import runCommand as rc
-    rc('open {cif_file}')
-    rc('select :/isHet')
-    rc('write selected format pdb {output_file}')
-    rc('close all')
-    rc('stop now')
+    chimera_command = f"""from chimera import runCommand as rc
+rc('open {cif_file}')
+rc('select :/isHet')
+rc('write selected format pdb #0 {output_file}')
+rc('close all')
+rc('stop now')
     """
 
-    with open("chimera_command.py", "w") as f:
+    with open(f"{command_file}", "w") as f:
         f.write(chimera_command)
 
-    os.system(f"{chimera_dir}/bin/chimera --nogui --script chimera_command.py")
-    os.remove("chimera_command.py")
+    os.system(f'"{chimera_dir}/bin/chimera" --nogui --script {command_file}')
+
+    if remove_command_file:
+        os.remove(f"{command_file}")
 
 
 def calc_qscores(map_file, pdb_file, mapq_dir, chimera_dir, np=6, res=3.0, sigma=0.6):
