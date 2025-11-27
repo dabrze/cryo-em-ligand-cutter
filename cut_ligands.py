@@ -20,6 +20,7 @@ from utils.cryoem_utils import (
 
 def extract_ligand(
     output_folder,
+    disable_thresholding,
     density_threshold,
     min_blob_radius,
     atom_radius,
@@ -68,7 +69,10 @@ def extract_ligand(
 
     # Resampling the map to target voxel size
     blob = resample_blob(blob, target_voxel_size, unit_cell, map_array)
-    blob[blob < density_threshold] = 0
+    if not disable_thresholding:
+        blob[blob < density_threshold] = 0
+    else:
+        blob[blob <= 0] = 0
     blob_volume = get_blob_volume(np.sum(blob != 0), target_voxel_size)
 
     if blob_volume >= get_sphere_volume(min_blob_radius):
@@ -86,9 +90,17 @@ def extract_ligand(
         blob_cov_frac = np.sum(res_voxels & blob_voxels) / np.sum(blob_voxels)
 
         if res_cov_frac >= res_cov_threshold and blob_cov_frac >= blob_cov_threshold:
-            # rescaling density values
-            logging.info(f"Rescaling min density to: {MAP_VALUE_MAPPER[resolution]}")
-            blob = blob * (MAP_VALUE_MAPPER[resolution] / blob[blob > 0].min())
+            positive_values = blob[blob > 0]
+            if disable_thresholding:
+                scale_reference = density_threshold
+            else:
+                scale_reference = positive_values.min()
+            scale_reference = max(scale_reference, np.finfo(positive_values.dtype).eps)
+            logging.info(
+                f"Rescaling min density to: {MAP_VALUE_MAPPER[resolution]} "
+                f"(reference: {scale_reference:.6f})"
+            )
+            blob = blob * (MAP_VALUE_MAPPER[resolution] / scale_reference)
             blob_filename = f"{ligand_name}.npz"
 
             logging.info(
@@ -122,6 +134,7 @@ def process_deposit(
     blob_cov_threshold=0.01,
     padding=2,
     verbose=False,
+    disable_thresholding=False,
 ):
     """
     Extracts ligands from a PDB file and saves nearby atom counts to a CSV file.
@@ -145,6 +158,7 @@ def process_deposit(
             Defaults to 0.01.
         padding (int, optional): The number of voxels to pad around each ligand. Defaults to 2.
         verbose (bool, optional): Whether to output verbose logging. Defaults to False.
+        disable_thresholding (bool, optional): Skip density cutoff and keep raw densities.
     """
     try:
         logging.info("------------------------")
@@ -195,7 +209,7 @@ def process_deposit(
             )
             zeros_pct = np.sum(~value_mask) / map_array.size
             logging.info(f"Median: {map_median:.3f}, std: {map_std:.3f}")
-            logging.info(f"Percentage of removed values: {zeros_pct*100:.2f}%")
+            logging.info(f"Percentage of removed values: {zeros_pct * 100:.2f}%")
 
             quantile_threshold = norm.cdf(density_std_threshold)
             density_threshold = np.quantile(map_array[value_mask], quantile_threshold)
@@ -208,6 +222,7 @@ def process_deposit(
             Parallel(n_jobs=n_jobs, prefer="threads")(
                 delayed(extract_ligand)(
                     output_folder,
+                    disable_thresholding,
                     density_threshold,
                     min_blob_radius,
                     atom_radius,
@@ -252,7 +267,25 @@ if __name__ == "__main__":
     parser.add_argument(
         "-l", "--log_file", help="Log filename", default="blob_processing.log"
     )
+    parser.add_argument(
+        "-d",
+        "--density_std_threshold",
+        help="Number of std deviations from the mean to use for density threshold (default: 2.8).",
+        default=2.8,
+        type=float,
+    )
+    parser.add_argument(
+        "--disable_thresholding",
+        action="store_true",
+        help="Keep raw densities (no quantile thresholding).",
+    )
     args = parser.parse_args()
+
+    if args.density_std_threshold == 0:
+        raise ValueError(
+            "Density std threshold cannot be zero. Set it near zero."
+        )
+
     logging.basicConfig(
         # filename=args.log_file,
         level=logging.INFO,
@@ -270,7 +303,14 @@ if __name__ == "__main__":
     logging.info(f"Found {len(pdb_ids)} PDB ids in the input file.")
 
     for pdb_id in pdb_ids:
-        process_deposit(pdb_id.upper(), args.input_dir, args.output_dir, args.n_jobs)
+        process_deposit(
+            pdb_id.upper(),
+            args.input_dir,
+            args.output_dir,
+            args.n_jobs,
+            args.density_std_threshold,
+            disable_thresholding=args.disable_thresholding,
+        )
 
     logging.info("========================")
     logging.info("Done.")
