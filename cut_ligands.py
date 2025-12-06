@@ -1,4 +1,5 @@
 import os
+import gc
 import logging
 import argparse
 import numpy as np
@@ -282,9 +283,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     if args.density_std_threshold == 0:
-        raise ValueError(
-            "Density std threshold cannot be zero. Set it near zero."
-        )
+        raise ValueError("Density std threshold cannot be zero. Set it near zero.")
 
     logging.basicConfig(
         # filename=args.log_file,
@@ -311,6 +310,7 @@ if __name__ == "__main__":
             args.density_std_threshold,
             disable_thresholding=args.disable_thresholding,
         )
+        gc.collect()
 
     logging.info("========================")
     logging.info("Done.")
